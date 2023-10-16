@@ -2,15 +2,18 @@ import os
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from typing import Tuple, Callable, List
+from typing import Tuple, Callable, List, Dict
 
 
-# Loads all paths to images and their corresponding masks and returns them as 2 tensors
-def load_image_and_mask_paths(data_path: str) -> Tuple[List[str], List[str]]:
+# Loads all paths to images and their corresponding masks and returns them as 2 lists
+def load_image_and_mask_paths(
+    data_path: str, max_len: int = None
+) -> Tuple[List[str], List[str]]:
     image_folder_path = data_path + "images/"
     mask_folder_path = data_path + "masks/"
 
     ids = [os.path.splitext(image)[0] for image in os.listdir(image_folder_path)]
+    ids = ids if max_len == None or max_len >= len(ids) else random.sample(ids, max_len)
 
     image_paths = [image_folder_path + id + ".jpg" for id in ids]
     mask_paths = [mask_folder_path + id + ".png" for id in ids]
@@ -36,6 +39,7 @@ def load_images_and_masks(
 
         mask = tf.io.read_file(mask_path)
         mask = tf.io.decode_png(mask, channels=1) // 255
+        mask = tf.cast(mask, tf.float32)
         mask = tf.image.resize(
             mask, image_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR
         )
@@ -47,11 +51,9 @@ def load_images_and_masks(
 
 # Splits the dataset into 2 parts based on the train_ratio and returns these 2 parts
 def split(
-    dataset: tf.data.Dataset, train_ratio: float
+    dataset: tf.data.Dataset, train_size, val_size
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
-    ds_len = dataset.cardinality().numpy()
-    train_size = int(ds_len * train_ratio)
-    shuffle_ds = dataset.shuffle(buffer_size=500)  # TODO
+    shuffle_ds = dataset.shuffle(buffer_size=BUFFER_SIZE)
     return shuffle_ds.take(train_size), shuffle_ds.skip(train_size)
 
 
@@ -68,3 +70,19 @@ def show(image: np.array, mask: np.array, prediction: np.array = None) -> None:
         plt.axis("off")
 
     plt.show()
+
+
+def wb_mask(image, mask, prediction):
+    return wandb.Image(
+        image,
+        masks={
+            "prediction": {
+                "mask_data": prediction[:, :, 0],
+                "class_labels": {0: "tissue", 1: "nerve"},
+            },
+            "ground truth": {
+                "mask_data": mask.numpy()[:, :, 0],
+                "class_labels": {0: "tissue", 1: "nerve"},
+            },
+        },
+    )
