@@ -1,5 +1,7 @@
 import cv2 as cv
-from typing import Tuple
+from typing import Tuple, Union
+
+import numpy as np
 
 from common.models import Image
 
@@ -11,21 +13,42 @@ class Mask(Image):
     TUMOR_MASK_COLOR = (13, 13, 13)  # Without nerves
     EMPTY_MASK_COLOR = (14, 14, 14)  # Non-tumor without nerves
 
+    def __init__(self, image: Union[np.ndarray, str]):
+        super().__init__(image)
+        self._contains_nerve = None
+        self._contains_tumor = None
+        self._contains_nontumor_without_nerve = None
+        self._contains_pni = None
+
     def contains_nerve(self, threshold: float = 0.1) -> bool:
+        if self._contains_nerve is not None:
+            return self._contains_nerve
         nerve_pixels = self.count_mask_pixels(self.NERVE_MASK_COLOR)
-        return nerve_pixels / (self.width * self.height) > threshold
+        self._contains_nerve = nerve_pixels / (self.width * self.height) > threshold
+        return self._contains_nerve
 
     def contains_tumor(self, threshold: float = 0.7) -> bool:
+        if self._contains_tumor is not None:
+            return self._contains_tumor
         tumor_pixels = self.count_mask_pixels(self.TUMOR_MASK_COLOR)
-        return tumor_pixels / (self.width * self.height) > threshold
+        self._contains_tumor = tumor_pixels / (self.width * self.height) > threshold
+        return self._contains_tumor
 
     def contains_nontumor_without_nerve(self, threshold: float = 0.5) -> bool:
+        if self._contains_nontumor_without_nerve is not None:
+            return self._contains_nontumor_without_nerve
         empty_pixels = self.count_mask_pixels(self.EMPTY_MASK_COLOR)
-        return empty_pixels / (self.width * self.height) > threshold
+        self._contains_nontumor_without_nerve = (
+            empty_pixels / (self.width * self.height) > threshold
+        )
+        return self._contains_nontumor_without_nerve
 
     def contains_pni(self, threshold_pixels: int = 100) -> bool:
+        if self._contains_pni is not None:
+            return self._contains_pni
         pni_pixels = self.count_mask_pixels(self.PNI_MASK_COLOR)
-        return pni_pixels > threshold_pixels
+        self._contains_pni = pni_pixels > threshold_pixels
+        return self._contains_pni
 
     def count_mask_pixels(self, color=Tuple[int, int, int]) -> int:
         dst = cv.inRange(self.read_block(), color, color)

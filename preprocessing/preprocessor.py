@@ -1,4 +1,4 @@
-from typing import Tuple, Iterator, Union
+from typing import Tuple, Iterator
 
 from common.models import Image, SVS
 from preprocessing.models import Mask, Sample
@@ -10,13 +10,11 @@ class Preprocessor:
         self._overlap = overlap
         self._step_size = int(patch_size[0] * (1 - overlap))
 
-    def extract_patches(
-        self, svs: SVS, mask: Mask = None
-    ) -> Iterator[Tuple[Sample, str]]:
+    def extract_patches(self, svs: SVS, mask: Mask = None) -> Iterator[Sample]:
         sample = Sample(svs, mask)
         return self._generate_patches(sample)
 
-    def _generate_patches(self, sample: Sample) -> Iterator[Tuple[Sample, str]]:
+    def _generate_patches(self, sample: Sample) -> Iterator[Sample]:
         w, h = self._patch_size[0], self._patch_size[1]
         mask_w = int(w * sample.mask_image_width_ratio)
         mask_h = int(h * sample.mask_image_height_ratio)
@@ -33,14 +31,11 @@ class Preprocessor:
                     rect=(mask_x, mask_y, mask_w, mask_h), size=(w, h)
                 )
                 mask = Mask(mask_block)
-
-                label = self._label_mask(mask)
-                if not label:
+                if not self._check_patch_prerequisities(mask):
                     continue
-
                 image_block = sample.image.read_block(rect=(x, y, w, h))
                 patch = Sample(Image(image_block), mask)
-                yield patch, label
+                yield patch
 
     def _check_row_prerequisities(self, mask: Mask, mask_y: int, mask_h: int) -> bool:
         row_mask_block = mask.read_block(rect=(0, mask_y, mask.width, mask_h))
@@ -50,44 +45,59 @@ class Preprocessor:
     def _check_row(self, mask: Mask) -> bool:
         raise NotImplementedError
 
-    def _label_mask(self, mask: Mask) -> Union[str, None]:
+    def _check_patch_prerequisities(self, mask: Mask) -> bool:
         raise NotImplementedError
 
 
 class NervePreprocessor(Preprocessor):
-    def _check_row(self, mask: Mask):
+    def _check_row(self, mask: Mask) -> bool:
         return mask.count_mask_pixels(mask.NERVE_MASK_COLOR) > 0
 
-    def _label_mask(self, mask: Mask) -> Union[str, None]:
-        if mask.contains_nerve():
-            return "nerve"
-        return None
+    def _check_patch_prerequisities(self, mask: Mask) -> bool:
+        return mask.contains_nerve()
 
 
 class TumorPreprocessor(Preprocessor):
-    def _check_row(self, mask: Mask):
-        # Check if there are some tumor, nerve (without tumor) or empty pixels
-        return (
-            mask.count_mask_pixels(mask.TUMOR_MASK_COLOR) > 0
-            or mask.count_mask_pixels(mask.NERVE_MASK_COLOR) > 0
-            or mask.count_mask_pixels(mask.EMPTY_MASK_COLOR) > 0
-        )
+    def __init__(self, patch_size: Tuple[int, int], overlap: float) -> None:
+        super().__init__(patch_size, overlap)
+        self._tumors = 0
+        self._nerves = 0
+        self._empty = 0
 
-    def _label_mask(self, mask: Mask) -> Union[str, None]:
+    def _check_row(self, mask: Mask) -> bool:
+        # Check if there are some tumors
+        if mask.count_mask_pixels(mask.TUMOR_MASK_COLOR) > 0:
+            return True
+        # Check if number of extracted nerves is less than half of the tumors and if there are some nerves
+        if (
+            self._tumors // 2 > self._nerves
+            and mask.count_mask_pixels(mask.NERVE_MASK_COLOR) > 0
+        ):
+            return True
+        # Check if number of extracted empty is less than half of the tumors and if there are some empty
+        if (
+            self._tumors // 2 > self._empty
+            and mask.count_mask_pixels(mask.EMPTY_MASK_COLOR) > 0
+        ):
+            return True
+        return False
+
+    def _check_patch_prerequisities(self, mask: Mask) -> bool:
         if mask.contains_tumor():
-            return "tumor"
-        elif mask.contains_nerve():
-            return "nerve"
-        elif mask.contains_nontumor_without_nerve():
-            return "empty"
-        return None
+            self._tumors += 1
+            return True
+        if mask.contains_nerve():
+            self._nerves += 1
+            return True
+        if mask.contains_nontumor_without_nerve():
+            self._empty += 1
+            return True
+        return False
 
 
 class PNIPreprocessor(Preprocessor):
-    def _check_row(self, mask: Mask):
+    def _check_row(self, mask: Mask) -> bool:
         return mask.count_mask_pixels(mask.PNI_MASK_COLOR) > 0
 
-    def _label_mask(self, mask: Mask) -> Union[str, None]:
-        if mask.contains_pni():
-            return "pni"
-        return None
+    def _check_patch_prerequisities(self, mask: Mask) -> bool:
+        return mask.contains_pni()
