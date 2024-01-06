@@ -22,7 +22,7 @@ class Preprocessor:
             print(f"{y}/{sample.image.height}")
 
             mask_y = int(y * sample.mask_image_height_ratio)
-            if not self._check_row_prerequisities(sample.mask, mask_y, mask_h):
+            if not self._check_row_prerequisites(sample.mask, mask_y, mask_h):
                 continue
 
             for x in range(0, sample.image.width - w + 1, self._step_size):
@@ -31,13 +31,13 @@ class Preprocessor:
                     rect=(mask_x, mask_y, mask_w, mask_h), size=(w, h)
                 )
                 mask = Mask(mask_block)
-                if not self._check_patch_prerequisities(mask):
+                if not self._check_patch_prerequisites(mask):
                     continue
                 image_block = sample.image.read_block(rect=(x, y, w, h))
                 patch = Sample(Image(image_block), mask)
                 yield patch
 
-    def _check_row_prerequisities(self, mask: Mask, mask_y: int, mask_h: int) -> bool:
+    def _check_row_prerequisites(self, mask: Mask, mask_y: int, mask_h: int) -> bool:
         row_mask_block = mask.read_block(rect=(0, mask_y, mask.width, mask_h))
         row_mask = Mask(row_mask_block)
         return self._check_row(row_mask)
@@ -45,7 +45,7 @@ class Preprocessor:
     def _check_row(self, mask: Mask) -> bool:
         raise NotImplementedError
 
-    def _check_patch_prerequisities(self, mask: Mask) -> bool:
+    def _check_patch_prerequisites(self, mask: Mask) -> bool:
         raise NotImplementedError
 
 
@@ -53,7 +53,7 @@ class NervePreprocessor(Preprocessor):
     def _check_row(self, mask: Mask) -> bool:
         return mask.count_mask_pixels(mask.NERVE_MASK_COLOR) > 0
 
-    def _check_patch_prerequisities(self, mask: Mask) -> bool:
+    def _check_patch_prerequisites(self, mask: Mask) -> bool:
         return mask.contains_nerve()
 
 
@@ -82,7 +82,7 @@ class TumorPreprocessor(Preprocessor):
             return True
         return False
 
-    def _check_patch_prerequisities(self, mask: Mask) -> bool:
+    def _check_patch_prerequisites(self, mask: Mask) -> bool:
         if mask.contains_tumor():
             self._tumors += 1
             return True
@@ -99,5 +99,5 @@ class PNIPreprocessor(Preprocessor):
     def _check_row(self, mask: Mask) -> bool:
         return mask.count_mask_pixels(mask.PNI_MASK_COLOR) > 0
 
-    def _check_patch_prerequisities(self, mask: Mask) -> bool:
+    def _check_patch_prerequisites(self, mask: Mask) -> bool:
         return mask.contains_pni()
