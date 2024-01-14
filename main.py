@@ -1,13 +1,16 @@
-from common.models import SVS
-from preprocessing.preprocessor import (
-    NervePreprocessor,
-    TumorPreprocessor,
-    PNIPreprocessor,
-)
-from preprocessing.models import Mask
-import cv2 as cv
 import glob
 import os
+
+import cv2 as cv
+import numpy as np
+
+from common.config import SVS
+from preprocessing.models import Mask
+from preprocessing.preprocessor import (
+    NervePreprocessor,
+    PNIPreprocessor,
+    TumorPreprocessor
+)
 
 
 def extract_nerves():
@@ -92,7 +95,16 @@ def extract_pni():
 
 
 def main():
-    extract_tumors()
+    c = 0
+    for file in glob.glob("./data/pancreas/pni/masks/*.png"):
+        sample_name = os.path.splitext(os.path.basename(file))[0]
+        # svs = SVS(f"{data_raw_path}{sample_name}.svs")
+        im = cv.imread(f"./data/pancreas/pni/masks/{sample_name}.png")
+        if np.sum(im == 255) < 3000:
+            os.remove(f"./data/pancreas/pni/masks/{sample_name}.png")
+            os.remove(f"./data/pancreas/pni/images/{sample_name}.jpg")
+            c += 1
+            print(c)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,6 @@
-from typing import Tuple, Iterator
+from typing import Iterator, Tuple
 
-from common.models import Image, SVS
-from preprocessing.models import Mask, Sample
+from preprocessing.models import Image, Mask, Sample
 
 
 class Preprocessor:
@@ -10,8 +9,9 @@ class Preprocessor:
         self._overlap = overlap
         self._step_size = int(patch_size[0] * (1 - overlap))
 
-    def extract_patches(self, svs: SVS, mask: Mask = None) -> Iterator[Sample]:
-        sample = Sample(svs, mask)
+    # TODO: Return also patch #number
+    def extract_patches(self, image: Image, mask: Mask = None) -> Iterator[Sample]:
+        sample = Sample(image, mask)
         return self._generate_patches(sample)
 
     def _generate_patches(self, sample: Sample) -> Iterator[Sample]:
