@@ -9,18 +9,15 @@ class Preprocessor:
         self._overlap = overlap
         self._step_size = int(patch_size[0] * (1 - overlap))
 
-    # TODO: Return also patch #number
-    def extract_patches(self, image: Image, mask: Mask = None) -> Iterator[Sample]:
+    def extract_patches(self, image: Image, mask: Mask = None) -> Iterator[Tuple[int, int, Sample]]:
         sample = Sample(image, mask)
         return self._generate_patches(sample)
 
-    def _generate_patches(self, sample: Sample) -> Iterator[Sample]:
+    def _generate_patches(self, sample: Sample) -> Iterator[Tuple[int, int, Sample]]:
         w, h = self._patch_size[0], self._patch_size[1]
         mask_w = int(w * sample.mask_image_width_ratio)
         mask_h = int(h * sample.mask_image_height_ratio)
         for y in range(0, sample.image.height - h + 1, self._step_size):
-            print(f"{y}/{sample.image.height}")
-
             mask_y = int(y * sample.mask_image_height_ratio)
             if not self._check_row_prerequisites(sample.mask, mask_y, mask_h):
                 continue
@@ -35,7 +32,7 @@ class Preprocessor:
                     continue
                 image_block = sample.image.read_block(rect=(x, y, w, h))
                 patch = Sample(Image(image_block), mask)
-                yield patch
+                yield x, y, patch
 
     def _check_row_prerequisites(self, mask: Mask, mask_y: int, mask_h: int) -> bool:
         row_mask_block = mask.read_block(rect=(0, mask_y, mask.width, mask_h))

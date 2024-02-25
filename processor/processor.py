@@ -42,8 +42,11 @@ class Prediction:
     
 
 class Processor:
+    _overlap = 0.5
+    _patch_size=(1024, 1024)
+
     def __init__(self, tumor_model_path: str, nerve_model_path: str, pni_model_path: str) -> None:
-        self._preprocessor = Preprocessor(patch_size=(1024, 1024), overlap=0.5) # TODO: Create new Preprocessor that extracts all patches
+        self._preprocessor = Preprocessor(patch_size=self._patch_size, overlap=self._overlap) # TODO: Create new Preprocessor that extracts all patches
         self._tumor_detector: tf.keras.Model = tf.keras.models.load_model(tumor_model_path)
         self._nerve_segmenter: tf.keras.Model = tf.keras.models.load_model(nerve_model_path)
         self._pni_segmenter: tf.keras.Model = tf.keras.models.load_model(pni_model_path)
@@ -52,13 +55,13 @@ class Processor:
         prediction = Prediction(image=image)
         
         # Extract patches
-        for i, sample in self.preprocessor.extract_patches(image):
+        for (x, y, sample) in self._preprocessor.extract_patches(image):
             is_tumor = self.detect_tumor(sample.image)
             nerve_mask = self.segment_nerves(sample.image)            
             if is_tumor and self._contains_nerves(nerve_mask):
                 pni_mask = self.segment_pni(sample.image, nerve_mask)
-                prediction.add_pni(pni_mask, x=1,y=1) # TODO: Calculate x and y
-            prediction.add_nerves(nerve_mask, x=1,y=1) # TODO: Calculate x and y
+                prediction.add_pni(pni_mask, x=x, y=y)
+            prediction.add_nerves(nerve_mask, x=x, y=y)
 
         return prediction
 
