@@ -1,12 +1,10 @@
-from typing import Tuple, Union
-
 import cv2 as cv
 import numpy as np
 import slideio
 
 
 class Image:
-    def __init__(self, image: Union[np.ndarray, str]):
+    def __init__(self, image):
         if type(image) is np.ndarray:
             self._raw_image = image
         elif type(image) is str:
@@ -24,8 +22,8 @@ class Image:
 
     def read_block(
         self,
-        rect: Tuple[int, int, int, int] = None,  # x, y, w, h
-        size: Tuple[int, int] = None,  # w, h
+        rect: tuple = None,  # x, y, w, h
+        size: tuple = None,  # w, h
     ) -> np.ndarray:
         block = self._raw_image.copy()
         if rect is not None:
@@ -44,7 +42,7 @@ class Mask(Image):
     TUMOR_MASK_COLOR = (13, 13, 13)  # Without nerves
     EMPTY_MASK_COLOR = (14, 14, 14)  # Non-tumor without nerves
 
-    def __init__(self, image: Union[np.ndarray, str]):
+    def __init__(self, image: np.ndarray):
         super().__init__(image)
         self._contains_nerve = None
         self._contains_tumor = None
@@ -81,13 +79,13 @@ class Mask(Image):
         self._contains_pni = pni_pixels > threshold_pixels
         return self._contains_pni
 
-    def count_mask_pixels(self, color=Tuple[int, int, int]) -> int:
+    def count_mask_pixels(self, color: tuple) -> int:
         dst = cv.inRange(self.read_block(), color, color)
         return cv.countNonZero(dst)
 
 
 class SVS(Image):
-    def __init__(self, scene: Union[slideio.Scene, str]):
+    def __init__(self, scene: slideio.Scene):
         if type(scene) is slideio.Scene:
             self._scene = scene
         elif type(scene) is str:
@@ -96,13 +94,10 @@ class SVS(Image):
         self._width = self._scene.rect[2]
         self._height = self._scene.rect[3]
 
-    def read_block(
-        self,
-        rect: Tuple[int, int, int, int] = (0, 0, 0, 0),
-        size: Tuple[int, int] = (0, 0),
-    ) -> np.ndarray:
+    def read_block(self, rect =(0, 0, 0, 0), size=(0, 0)) -> np.ndarray:
         return self._scene.read_block(rect=rect, size=size)
-    
+
+
 class Sample:
     def __init__(self, image: Image, mask: Mask = None):
         self._image = image
@@ -127,18 +122,3 @@ class Sample:
     @property
     def mask_image_height_ratio(self):
         return self._mask_image_height_ratio
-
-    def is_purple(
-        self,
-        rect: Tuple[int, int, int, int] = (0, 0, 0, 0),
-        purple_threshold: int = 220,
-        purple_ratio: float = 0.5,
-    ) -> bool:
-        patch = self.image.read_block(rect=rect)
-        gray_patch = cv.cvtColor(patch, cv.COLOR_BGR2GRAY)
-        _, black_white_patch = cv.threshold(
-            gray_patch, purple_threshold, 255, cv.THRESH_BINARY_INV
-        )
-        pixels = black_white_patch.size
-        colored_pixels = cv.countNonZero(black_white_patch)
-        return colored_pixels / pixels >= purple_ratio

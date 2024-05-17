@@ -1,19 +1,17 @@
-from typing import Iterator, Tuple
-
-from preprocessing.models import Image, Mask, Sample
+from models import Image, Mask, Sample
 
 
 class Preprocessor:
-    def __init__(self, patch_size: Tuple[int, int], overlap: float) -> None:
+    def __init__(self, patch_size: tuple, overlap: float) -> None:
         self._patch_size = patch_size
         self._overlap = overlap
         self._step_size = int(patch_size[0] * (1 - overlap))
 
-    def extract_patches(self, image: Image, mask: Mask = None) -> Iterator[Tuple[int, int, Sample]]:
+    def extract_patches(self, image: Image, mask: Mask):
         sample = Sample(image, mask)
         return self._generate_patches(sample)
 
-    def _generate_patches(self, sample: Sample) -> Iterator[Tuple[int, int, Sample]]:
+    def _generate_patches(self, sample: Sample):
         w, h = self._patch_size[0], self._patch_size[1]
         mask_w = int(w * sample.mask_image_width_ratio)
         mask_h = int(h * sample.mask_image_height_ratio)
@@ -55,7 +53,7 @@ class NervePreprocessor(Preprocessor):
 
 
 class TumorPreprocessor(Preprocessor):
-    def __init__(self, patch_size: Tuple[int, int], overlap: float) -> None:
+    def __init__(self, patch_size: tuple, overlap: float) -> None:
         super().__init__(patch_size, overlap)
         self._tumors = 0
         self._empty = 0
