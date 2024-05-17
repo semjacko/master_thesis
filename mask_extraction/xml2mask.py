@@ -2,10 +2,6 @@ import cv2
 import glob
 import numpy as np
 import os
-
-os.add_dll_directory(
-    "C:/Users/roboj/Desktop/Skola/DP/scripts/mask_extraction/openslide-win64-20171122/bin"
-)
 import openslide
 import os
 import re

@@ -1,0 +1,17 @@
+numpy==
+scipy==
+opencv-python==
+tensorflow==
+keras==
+segmentation_models==
+wandb==
+matplotlib==
+visualkeras==
+PIL==
+seaborn==
+sklearn==
+tqdm==
+glob2==
+openslide==
+skimage==
+slideio==

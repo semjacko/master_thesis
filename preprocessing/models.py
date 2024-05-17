@@ -51,21 +51,21 @@ class Mask(Image):
         self._contains_nontumor_without_nerve = None
         self._contains_pni = None
 
-    def contains_nerve(self, threshold: float = 0.1) -> bool:
+    def contains_nerve(self, threshold: float = 0.05) -> bool:
         if self._contains_nerve is not None:
             return self._contains_nerve
         nerve_pixels = self.count_mask_pixels(self.NERVE_MASK_COLOR)
         self._contains_nerve = nerve_pixels / (self.width * self.height) > threshold
         return self._contains_nerve
 
-    def contains_tumor(self, threshold: float = 0.7) -> bool:
+    def contains_tumor(self, threshold: float = 0.8) -> bool:
         if self._contains_tumor is not None:
             return self._contains_tumor
         tumor_pixels = self.count_mask_pixels(self.TUMOR_MASK_COLOR)
         self._contains_tumor = tumor_pixels / (self.width * self.height) > threshold
         return self._contains_tumor
 
-    def contains_nontumor_without_nerve(self, threshold: float = 0.5) -> bool:
+    def contains_nontumor_without_nerve(self, threshold: float = 0.8) -> bool:
         if self._contains_nontumor_without_nerve is not None:
             return self._contains_nontumor_without_nerve
         empty_pixels = self.count_mask_pixels(self.EMPTY_MASK_COLOR)
@@ -74,7 +74,7 @@ class Mask(Image):
         )
         return self._contains_nontumor_without_nerve
 
-    def contains_pni(self, threshold_pixels: int = 100) -> bool:
+    def contains_pni(self, threshold_pixels: int = 1500) -> bool:
         if self._contains_pni is not None:
             return self._contains_pni
         pni_pixels = self.count_mask_pixels(self.PNI_MASK_COLOR)

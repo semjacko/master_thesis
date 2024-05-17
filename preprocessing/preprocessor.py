@@ -58,33 +58,20 @@ class TumorPreprocessor(Preprocessor):
     def __init__(self, patch_size: Tuple[int, int], overlap: float) -> None:
         super().__init__(patch_size, overlap)
         self._tumors = 0
-        self._nerves = 0
         self._empty = 0
 
     def _check_row(self, mask: Mask) -> bool:
         # Check if there are some tumors
         if mask.count_mask_pixels(mask.TUMOR_MASK_COLOR) > 0:
             return True
-        # Check if number of extracted nerves is less than half of the tumors and if there are some nerves
-        if (
-            self._tumors // 2 > self._nerves
-            and mask.count_mask_pixels(mask.NERVE_MASK_COLOR) > 0
-        ):
-            return True
-        # Check if number of extracted empty is less than half of the tumors and if there are some empty
-        if (
-            self._tumors // 2 > self._empty
-            and mask.count_mask_pixels(mask.EMPTY_MASK_COLOR) > 0
-        ):
+        # Check if there are some empty
+        if mask.count_mask_pixels(mask.EMPTY_MASK_COLOR) > 0:
             return True
         return False
 
     def _check_patch_prerequisites(self, mask: Mask) -> bool:
         if mask.contains_tumor():
             self._tumors += 1
-            return True
-        if mask.contains_nerve():
-            self._nerves += 1
             return True
         if mask.contains_nontumor_without_nerve():
             self._empty += 1
