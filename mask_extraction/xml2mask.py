@@ -84,14 +84,13 @@ def xml2mask(xml_fn, slide, level):
 
 
 if __name__ == "__main__":
-    svs_load_dir = "./data_raw/"
-    xml_load_dir = "./data_raw/"
+    svs_load_dir = "../data_raw/pancreas/"
+    xml_load_dir = "../data_raw/pancreas/"
     xml_fns = sorted(
         glob.glob(xml_load_dir + "*.xml") + glob.glob(xml_load_dir + "*.XML")
     )
     level = 1
-    mask_save_dir = f"./mask_img_l{level}/"
-    os.makedirs(mask_save_dir, exist_ok=True)
+    mask_save_dir = f"../data_raw/pancreas/"
 
     wsi_uid_pattern = "[a-zA-Z]*_PNI2021chall_train_[0-9]{4}"
     wsi_regex = re.compile(wsi_uid_pattern)
