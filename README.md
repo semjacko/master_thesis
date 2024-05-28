@@ -15,3 +15,5 @@ For nerve segmentation, we compared the performance of VGG-19 and ResNet-50 mode
 
 ## PNI segmentation
 For PNI segmentation, we utilized a modified ResNet-50 model with 2 inputs. The first input was a 512x512x4 image, where the first 3 channels represented the image patch and the 4th channel contained the nerve segmentation mask. The second input was the probability of tumor presence, which was directly connected to the final `Conditional Interpolation Layer`. Initially, the model generated predictions of the PNI curves, which were then interpolated with the tumor probability predictions in the `Conditional Interpolation Layer` to reduce false positive predictions.
+
+![image](https://github.com/semjacko/master_thesis/assets/43437335/41142794-74d8-4437-a5b6-36abd09ba531)
